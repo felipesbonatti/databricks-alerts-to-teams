@@ -1,101 +1,83 @@
-# 🚀 Validador Automático de Dados
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/felipesbonatti/validador-automatico?style=flat-square)](https://github.com/felipesbonatti/validador-automatico)
-[![GitHub repo size](https://img.shields.io/github/repo-size/felipesbonatti/validador-automatico?style=flat-square)](https://github.com/felipesbonatti/validador-automatico)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+# 🚀 Databricks Alerts to Teams [![Databricks](https://img.shields.io/badge/Databricks-FF3621?logo=databricks)](https://databricks.com/)
 
-<p align="center">
-  <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="Logo GitHub" width="100">
-</p>
+[![Python](https://img.shields.io/badge/Python-3.6+-blue?logo=python)](https://www.python.org/)
+[![PySpark](https://img.shields.io/badge/PySpark-3.0+-E25A1C?logo=apachespark)](https://spark.apache.org/)
+[![Microsoft Teams](https://img.shields.io/badge/Teams_Webhook-6264A7?logo=microsoft-teams)](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
 
----
+## 📌 Visão Geral
+Sistema de monitoramento que:
 
-## 📌 Sobre o Projeto
+✔ **Valida automaticamente** volumes de dados no Databricks  
+✔ **Envia alertas** para canais do Microsoft Teams  
+✔ **Previne inconsistências** em processos ETL  
 
-Este repositório apresenta um **validador automático de dados** desenvolvido para ser utilizado durante os processos de atualização de dashboards. O objetivo principal é **detectar variações anômalas (outliers)** e **reportá-las via Microsoft Teams** antes da finalização do processo, evitando retrabalho e inconsistências nos relatórios.
+```mermaid
+graph TD
+    A[Databricks Job] --> B[Consulta SQL]
+    B --> C{Verifica Count}
+    C -->|Count < Limite| D[(Notificação OK)]
+    C -->|Count > Limite| E[(Notificação ERRO)]
+```
 
-O validador foi projetado para **automatizar a validação de dados**, garantindo maior confiabilidade e eficiência nos processos de atualização de dashboards.
+## ⚙️ Funcionamento do Código
+### Fluxo Principal
+```python
+# 1. Consulta no Databricks 
+df = sqlContext.sql("""
+  SELECT codigo_x AS QTD_CLI,
+         date_format(atualizacao,'yyyyMM') AS DATA_REFERENCIA
+  FROM tabela
+  WHERE xpto1 = 'F' 
+  AND atualizacao = '2024-06-28'
+""")
 
-<p style="color: red; font-size: 14px;">
-  <strong>Observação:</strong> Por questões de conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD)</strong>, os nomes dos campos e informações sensíveis foram omitidos ou anonimizados neste repositório.
-</p>
+# 2. Validação 
+if df.count() > 0:
+    status = "OK" if df.count() < 488000 else "ERRO"
+    
+    # 3. Notificação 
+    mensagem = pymsteams.connectorcard("<WEBHOOK_URL>")
+    mensagem.text(f"STATUS: {status} - Registros: {df.count()}")
+    mensagem.send()
+```
 
----
-
-## 🎯 Objetivo
-
-O principal objetivo deste projeto é:
-
-- **Validar os dados** antes da atualização dos dashboards.
-- **Detectar outliers** na contagem de clientes e rentabilidade.
-- **Alertar a equipe** via Microsoft Teams em caso de inconsistências.
-- **Reduzir retrabalho** e garantir maior confiabilidade nos dashboards.
-
----
-
-## ⚙️ Funcionamento
-
-O validador funciona em quatro etapas principais:
-
-1. **Consulta dos Dados:**
-   - Consulta os dados no ambiente **PySpark SQL** com filtros específicos.
-
-2. **Verificação de Anomalias:**
-   - Verifica a contagem de registros e identifica possíveis anomalias.
-
-3. **Geração de Mensagens:**
-   - Gera uma mensagem de monitoramento, diferenciando casos normais e críticos.
-
-4. **Envio de Alertas:**
-   - Envia um alerta para o **Microsoft Teams**, permitindo a intervenção antes da conclusão da atualização.
-
----
+## 📊 Contexto Bancário (LGPD)
+```python
+# Campos sensíveis omitidos
+WHERE xpto4 IN ('N')  # Filtro regulatório
+AND xpto3 IN ('004', '005', '006')  # Códigos internos
+```
 
 ## 🛠️ Tecnologias Utilizadas
+| Tecnologia         | Uso no Projeto                     | Detalhe |
+|--------------------|------------------------------------|---------|
+| PySpark           | Processamento distribuído          | `sqlContext.sql()` |
+| pymsteams         | Integração com Teams               | `connectorcard()` |
+| Pandas            | Análise adicional (se necessário)  | Opcional |
 
-<div style="display: flex; flex-wrap: wrap; gap: 10px;">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/SQL-4479A1?style=for-the-badge&logo=postgresql&logoColor=white" alt="SQL">
-  <img src="https://img.shields.io/badge/PySpark-E25A1C?style=for-the-badge&logo=apache-spark&logoColor=white" alt="PySpark">
-  <img src="https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white" alt="Databricks">
-  <img src="https://img.shields.io/badge/Microsoft_Teams-6264A7?style=for-the-badge&logo=microsoft-teams&logoColor=white" alt="Microsoft Teams">
-  <img src="https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white" alt="Pandas">
-</div>
+## 🚀 Como Implementar
+1. **Configure o Webhook**:
+   ```python
+   # Substitua pela sua URL real
+   pymsteams.connectorcard("https://outlook.office.com/webhook/...")
+   ```
 
-- **Linguagens:** Python, SQL
-- **Big Data:** PySpark, Databricks, SparkSQL
-- **Notificação:** pymsteams (Microsoft Teams Webhook)
-- **Manipulação de Dados:** Pandas, PySpark DataFrames
+2. **Ajuste os Filtros**:
+   ```sql
+   WHERE xpto1 = 'F' 
+   AND atualizacao = '2024-06-28'  
+   ```
 
+3. **Execute no Databricks**:
+   ```python
+   %run /Seu/Path/alertas-databricks-to-teams.ipynb
+   ```
 ---
 
-## 📌 Benefícios do Validador
+[![LinkedIn](https://img.shields.io/badge/Felipe_Bonatti-LinkedIn-blue?logo=linkedin)](https://www.linkedin.com/in/felipebsdelima)  
 
-- **Automação do Processo:** Elimina a necessidade de validação manual, reduzindo erros.
-- **Detecção de Outliers em Tempo Real:** Identifica anomalias antes que afetem os dashboards.
-- **Integração com Microsoft Teams:** Facilita a comunicação e a tomada de ações corretivas.
-- **Flexibilidade e Escalabilidade:** Pode ser adaptado para outros cenários e bases de dados.
+[🐛 Reportar issue](https://github.com/felipesbonatti/databricks-alerts-to-teams/issues)
 
- ### 🌟 Destaques do Projeto
 
-- **Automação Inteligente:** Validação automática de dados, reduzindo erros manuais.
-- **Integração com Microsoft Teams:** Alertas em tempo real para a equipe.
-- **Conformidade com LGPD:** Respeito às normas de proteção de dados, garantindo segurança e privacidade.
-- **Escalável e Adaptável:** Pode ser utilizado em diversos cenários e bases de dados.
 
----
-
-## 🚀 Como Usar
-
-1. **Configure o Webhook do Microsoft Teams:**
-   - Crie um webhook no Microsoft Teams para receber as notificações.
-
-2. **Adapte a Consulta SQL:**
-   - Ajuste a consulta SQL no código conforme a base de dados utilizada.
-
-3. **Execute o Código:**
-   - Execute o código no **Databricks** ou outro ambiente compatível com PySpark.
-
-## 💻 Autor
-
-- **Felipe Bonatti** - [GitHub](https://github.com/felipesbonatti) | [LinkedIn](https://www.linkedin.com/in/felipebsdelima)
